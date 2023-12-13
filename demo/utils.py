@@ -134,13 +134,13 @@ def reconstruction_3d(file, pred, title):
 
     pred = pred.reshape(pred.shape[0], -1, 19, 3)
     pred = pred * (max_vals - min_vals) + min_vals
-    pred[:, :, :, 2] += 5
+    pred[:, :, :, 2] += 4
 
     width = 640
     height = 480 
     fps = 30
 
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'H264')
     out = cv2.VideoWriter(file, fourcc, fps, (width, height))
 
     for frame_idx, frame in enumerate(pred[0]):
@@ -158,11 +158,11 @@ def reconstruction_3d(file, pred, title):
         plt.title(title)
         fig.canvas.draw()
 
-        width, height = fig.canvas.get_width_height()
-        image_array = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        image_array = image_array.reshape((height, width, 3))
+        image_array = np.array(fig.canvas.renderer.buffer_rgba())
 
-        image_array_bgr = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
+        image_array_resized = cv2.resize(image_array[:, :, :3], (width, height))
+
+        image_array_bgr = cv2.cvtColor(image_array_resized, cv2.COLOR_RGBA2BGR)
 
         out.write(image_array_bgr)
 
@@ -170,4 +170,5 @@ def reconstruction_3d(file, pred, title):
         print(f"Processed frame {frame_idx+1} of 90")
 
     print(f"INFO: Finish creating results for {title}")
+    cv2.destroyAllWindows()
     out.release()

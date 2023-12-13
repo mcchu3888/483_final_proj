@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import cv2
 import os
+import shutil
 from ultralytics import YOLO
 from utils import *
 from models.rp_model import RPModel
@@ -9,20 +10,24 @@ from models.base import BaseModel
 from models.gat import GAT_LSTM
 from models.stgat import ST_GAT
 
-# Here I have provided 3 demo videos :)
-videos = [("https://sporty-clips.mlb.com/302d65a8-06d0-4c02-9b6b-2ce6cee4374c.mp4", 0)]
-video_path, islhp = videos[0] # select pitch video to run
+
+# I have provided 3 demo videos to use :)
+videos = [("./videos/demo1.mp4", 0),
+            ("./videos/demo2.mp4", 0),
+            ("./videos/demo3.mp4", 1)]
+video_path, islhp = videos[2] # select pitch video to run
 pitchid = "demo"
 
-if not os.path.exists("./results"):
-    os.mkdir("./results")
+if os.path.exists("./results"):
+    shutil.rmtree("./results")
+os.mkdir("./results")
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"using {DEVICE}")
 pose_model = YOLO("./weights/yolov8x-pose.pt")
 pose_model.to(DEVICE)
 
-results = pose_model.track(video_path, save=False, tracker="bytetrack.yaml", imgsz=640, conf=0.25, persist=True)
+results = pose_model.track(video_path, save=False, tracker="bytetrack.yaml", imgsz=640, conf=0.25, persist=False)
 best_fits = isolate_player_keypoints(results)
 pitcherid = best_fits["pitcher"]
 
@@ -32,7 +37,7 @@ width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 step = round(fps/30)
 
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+fourcc = cv2.VideoWriter_fourcc(*'H264')
 out = cv2.VideoWriter(f"./results/{pitchid}_2d.mp4", fourcc, fps, (width, height))
 
 for frame_count, result in enumerate(results):
@@ -50,9 +55,11 @@ for frame_count, result in enumerate(results):
     percent_completed = ((frame_count + 1) / len(results)) * 100
     print(f"Processed {frame_count + 1} frames ({percent_completed:0.2f}%)")
 
+cv2.destroyAllWindows()
+out.release()
+
 rp_model = RPModel()
 rp_idx = rp_model.find_rp(results, pitcherid, islhp, step)
-
 print(f"INFO: Release Point Detected. Frame {rp_idx}")
 
 pose_seq_2d = scale_fit(results, pitcherid, rp_idx, -60, 30, step)
@@ -61,7 +68,7 @@ pose_seq_2d = np.expand_dims(pose_seq_2d, axis=0)
 pose_seq_2d = torch.tensor(pose_seq_2d).double().to(DEVICE)
 
 model = BaseModel().double().to(DEVICE)
-model.load_state_dict(torch.load(f"./weights/base_model.pt"))
+model.load_state_dict(torch.load(f"./weights/base_model.pt", map_location=DEVICE))
 model.eval()
 pred = model(pose_seq_2d)
 pred = pred.detach().cpu().numpy()
@@ -69,7 +76,7 @@ reconstruction_3d("./results/demo_base.mp4", pred, "Base Model")
 
 
 model = GAT_LSTM().double().to(DEVICE)
-model.load_state_dict(torch.load(f"./weights/gat_model.pt"))
+model.load_state_dict(torch.load(f"./weights/gat_model.pt", map_location=DEVICE))
 model.eval()
 graph = model.make_graph(pose_seq_2d)
 pred = model(graph.to(DEVICE))
@@ -78,7 +85,7 @@ reconstruction_3d("./results/demo_gat.mp4", pred, "GAT Model")
 
 
 model = ST_GAT().double().to(DEVICE)
-model.load_state_dict(torch.load(f"./weights/stgat_model.pt"))
+model.load_state_dict(torch.load(f"./weights/stgat_model.pt", map_location=DEVICE))
 model.eval()
 graph = model.make_graph(pose_seq_2d)
 pred = model(graph.to(DEVICE))
