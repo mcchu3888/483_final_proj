@@ -11,8 +11,8 @@ CLASSES = {'batter': 0, 'catcher': 1, 'other': 2, 'pitcher': 3, 'umpire': 4}
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def isolate_player_keypoints(results, stride = 20):
-    pos_cls = YOLO("/home/ubuntu/michael/yolo_pe/models/yolov8-pos.pt")
-    cam_cls = YOLO("/home/ubuntu/michael/yolo_pe/models/yolov8-cam.pt")
+    pos_cls = YOLO("./weights/yolov8-pos.pt")
+    cam_cls = YOLO("/weights/yolov8-cam.pt")
     pos_cls.to(DEVICE)
     cam_cls.to(DEVICE)
 
