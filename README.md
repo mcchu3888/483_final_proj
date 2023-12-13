@@ -10,3 +10,4 @@ Usage: to run the demo follow these steps:
 4. Run python3 demo.py inside the demo folder
 
 The produced results are from the baseline, GAT, and STGAT models. There is also an isolated 2D keypoints video.
+To run a video outside of the ones provided, please provide demo.py with the handedness of the pitcher by changing islhp (0 if righty, 1 if lefty).
