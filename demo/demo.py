@@ -37,8 +37,8 @@ width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 step = round(fps/30)
 
-fourcc = cv2.VideoWriter_fourcc(*'H264')
-out = cv2.VideoWriter(f"./results/{pitchid}_2d.mp4", fourcc, fps, (width, height))
+fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+out = cv2.VideoWriter(f"./results/{pitchid}_2d.avi", fourcc, fps, (width, height))
 
 for frame_count, result in enumerate(results):
     success, frame = cap.read()
@@ -55,7 +55,6 @@ for frame_count, result in enumerate(results):
     percent_completed = ((frame_count + 1) / len(results)) * 100
     print(f"Processed {frame_count + 1} frames ({percent_completed:0.2f}%)")
 
-cv2.destroyAllWindows()
 out.release()
 
 rp_model = RPModel()
@@ -72,7 +71,7 @@ model.load_state_dict(torch.load(f"./weights/base_model.pt", map_location=DEVICE
 model.eval()
 pred = model(pose_seq_2d)
 pred = pred.detach().cpu().numpy()
-reconstruction_3d("./results/demo_base.mp4", pred, "Base Model")
+reconstruction_3d("./results/demo_base.avi", pred, "Base Model")
 
 
 model = GAT_LSTM().double().to(DEVICE)
@@ -81,7 +80,7 @@ model.eval()
 graph = model.make_graph(pose_seq_2d)
 pred = model(graph.to(DEVICE))
 pred = pred.detach().cpu().numpy()
-reconstruction_3d("./results/demo_gat.mp4", pred, "GAT Model")
+reconstruction_3d("./results/demo_gat.avi", pred, "GAT Model")
 
 
 model = ST_GAT().double().to(DEVICE)
@@ -90,4 +89,4 @@ model.eval()
 graph = model.make_graph(pose_seq_2d)
 pred = model(graph.to(DEVICE))
 pred = pred.detach().cpu().numpy()
-reconstruction_3d("./results/demo_stgat.mp4", pred, "STGAT Model")
+reconstruction_3d("./results/demo_stgat.avi", pred, "STGAT Model")

@@ -140,7 +140,7 @@ def reconstruction_3d(file, pred, title):
     height = 480 
     fps = 30
 
-    fourcc = cv2.VideoWriter_fourcc(*'H264')
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     out = cv2.VideoWriter(file, fourcc, fps, (width, height))
 
     for frame_idx, frame in enumerate(pred[0]):
@@ -170,5 +170,4 @@ def reconstruction_3d(file, pred, title):
         print(f"Processed frame {frame_idx+1} of 90")
 
     print(f"INFO: Finish creating results for {title}")
-    cv2.destroyAllWindows()
     out.release()
